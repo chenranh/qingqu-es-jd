@@ -1,7 +1,7 @@
 package com.qingqu.service;
 
+
 import com.alibaba.fastjson.JSON;
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.qingqu.pojo.Content;
 import com.qingqu.utils.HtmlParseUtil;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -14,7 +14,9 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
@@ -22,12 +24,12 @@ import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.naming.directory.SearchResult;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 
 /**
  * <p>
@@ -53,8 +55,8 @@ public class ContentService {
         BulkRequest bulkRequest = new BulkRequest();
         bulkRequest.timeout("2m");
         for (Content content : contents) {
-            bulkRequest.add(new IndexRequest("jd_goods")
-                    .source(JSON.toJSONString(content),XContentType.JSON));
+            bulkRequest.add(new IndexRequest("jd_goods5")
+                    .source(JSON.toJSONString(content), XContentType.JSON));
         }
 
         BulkResponse bulk = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
@@ -62,15 +64,14 @@ public class ContentService {
     }
 
     //2、获取这些数据实现搜素功能
-    public List<Map<String,Object>> searchPage(String keyword,int pageNo,int pageSize) throws IOException {
+    public List<Map<String,Object>> searchPage(String keyword, int pageNo, int pageSize) throws IOException {
 
         if(pageNo<=1){
             pageNo=1;
         }
         //条件搜素
-        SearchRequest searchRequest = new SearchRequest("jd_goods");
+        SearchRequest searchRequest = new SearchRequest("jd_goods4");
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-
         //分页
         sourceBuilder.from(pageNo);
         sourceBuilder.size(pageSize);
@@ -88,42 +89,30 @@ public class ContentService {
         for (SearchHit documentFields : searchResponse.getHits().getHits()) {
             list.add(documentFields.getSourceAsMap());
         }
-        //String string = JSON.toJSONString(list);
-        //System.out.println(string);
         return list;
     }
 
 
-    //3、构建高亮功能
+    //3、获取数据并同时构建高亮功能
     public List<Map<String,Object>> searchHighLightPage(String keyword,int pageNo,int pageSize) throws IOException {
 
-        if(pageNo<=1){
-            pageNo=1;
-        }
         //条件搜素
-        SearchRequest searchRequest = new SearchRequest("jd_goods");
+        SearchRequest searchRequest = new SearchRequest("jd_goods4");
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         //分页
         sourceBuilder.from(pageNo);
         sourceBuilder.size(pageSize);
+
+        //match
+        //MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("title", keyword);
+        //matchPhrase
+        MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery("title", keyword);
+
         //精准匹配
-        MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("title", keyword);
-        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("title", keyword);
+        //TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("title", keyword);
+        sourceBuilder.query(matchPhraseQueryBuilder);
 
-        //
-        BoolQueryBuilder bool = QueryBuilders.boolQuery();
-
-       char[] chars = keyword.toCharArray();
-        System.out.println(chars);
-        List<String> keywords =new ArrayList<>();
-        for (char aChar : chars) {
-            QueryBuilder queryBuilder = QueryBuilders.termQuery("title", String.valueOf(aChar));
-            bool.must(queryBuilder);
-        }
-
-        sourceBuilder.query(matchQueryBuilder);
         sourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
-
         //高亮
         HighlightBuilder highlightBuilder = new HighlightBuilder();
         highlightBuilder.field("title");
@@ -154,8 +143,6 @@ public class ContentService {
 
             list.add(sourceAsMap);
         }
-        //String string = JSON.toJSONString(list);
-        //System.out.println(string);
         return list;
     }
 

@@ -159,7 +159,15 @@ class QingquEsJdApplicationTests {
 		bulkRequest.timeout("10s");
 
 		ArrayList<Content> contentList = new ArrayList<>();
-
+		contentList.add(new Content("标题一","10.00","pic_url"));
+		contentList.add(new Content("标题二","10.00","pic_url"));
+		contentList.add(new Content("标题三","10.00","pic_url"));
+		contentList.add(new Content("标题1","10.00","pic_url"));
+		contentList.add(new Content("标题2","10.00","pic_url"));
+		contentList.add(new Content("标题3","10.00","pic_url"));
+		contentList.add(new Content("标题4","10.00","pic_url"));
+		contentList.add(new Content("标题5","10.00","pic_url"));
+		contentList.add(new Content("标题6","10.00","pic_url"));
 
 		for(int i=0 ;i< contentList.size();i++){
 			//批量更新和批量删除，就在这里修改对应的请求就可以了
